@@ -1,0 +1,284 @@
+10.17 02.26
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
+    <title>Lab Kanji Pro Mobile Anti-Stuck</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            margin: 0;
+            padding: 10px;
+        }
+        .blok-utama {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .tombol-grup {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        button, select {
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 6px;
+            border: 1px solid #94a3b8;
+            background-color: #ffffff;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        button:active {
+            background-color: #e2e8f0;
+        }
+        .btn-biru { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
+        .btn-hijau { background-color: #059669 !important; color: white !important; border-color: #059669 !important; }
+        .btn-merah { background-color: #ef4444 !important; color: white !important; border-color: #ef4444 !important; }
+        
+        .area-baca {
+            line-height: 3.2rem;
+            font-size: 1.6rem;
+            background: #fafafa;
+            border: 1px solid #cbd5e1;
+            padding: 12px;
+            border-radius: 6px;
+            min-height: 80px;
+            word-break: break-all;
+        }
+        ruby {
+            ruby-position: over;
+            margin-right: 8px;
+            background: #eef2ff;
+            padding: 0 4px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        rt {
+            font-size: 0.8rem;
+            color: #374151;
+            line-height: 1rem;
+        }
+        .kata-biasa {
+            display: inline-block;
+            padding: 0 4px;
+            background: #f3f4f6;
+            margin-right: 6px;
+            border-radius: 4px;
+        }
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid #94a3b8;
+            border-radius: 6px;
+            box-sizing: border-box;
+            margin-bottom: 8px;
+            display: block;
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 8px 0 4px 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BLOK 1: KONTROL UTAMA -->
+    <div class="blok-utama">
+        <h3 style="margin:0 0 10px 0; color:#4f46e5;"> Lab Kanji Pro Mobile</h3>
+        
+        <label>Pilih Judul Topik:</label>
+        <select id="pilih-topik" style="width:100%;" onchange="gantiTopik(this.value)"></select>
+        
+        <div class="tombol-grup">
+            <button type="button" class="btn-hijau" style="flex:1;" onclick="buatTopikBaru()">+ Buat Baru</button>
+            <button type="button" class="btn-merah" onclick="hapusTopikAktif()">️ Hapus</button>
+        </div>
+        <div class="tombol-grup">
+            <button type="button" style="flex:1;" onclick="eksporJson()"> Simpan File</button>
+            <button type="button" style="flex:1;" onclick="pancingImpor()"> Muat File</button>
+            <input type="file" id="input-berkas" style="display:none;" onchange="imporJson(event)" accept=".json">
+        </div>
+    </div>
+
+    <!-- BLOK 2: DATA HASIL BACAAN -->
+    <div class="blok-utama">
+        <h4 style="margin:0 0 8px 0;"> Teks Hasil Pembelajaran:</h4>
+        <div id="output-bacaan" class="area-baca"></div>
+        
+        <h4 style="margin:15px 0 4px 0;"> Catatan Tata Bahasa (Bunpou):</h4>
+        <div id="output-catatan" style="white-space:pre-wrap; background:#f0fdf4; padding:10px; border-radius:6px; color:#166534; border:1px solid #bbf7d0;"></div>
+    </div>
+
+    <!-- BLOK 3: KOLOM INPUT MANDIRI -->
+    <div class="blok-utama" style="border-top: 4px solid #4f46e5;">
+        <h4 style="margin:0 0 10px 0;"> Kolom Teks Otomatis Permanen:</h4>
+        
+        <label>Judul Materi:</label>
+        <input type="text" id="edit-judul" oninput="simpanMetaTopik()">
+        
+        <label>Level / Kategori Tag:</label>
+        <input type="text" id="edit-tag" oninput="simpanMetaTopik()">
+        
+        <label>Ketik Kalimat Di Sini (Pisahkan setiap kata dengan SPASI):</label>
+        <textarea id="edit-teks-mentah" rows="4" placeholder="Contoh: 今日[きょう] は 雨[あめ]" oninput="prosesTeksKeArray()"></textarea>
+        
+        <label>Catatan Bunpou / Arti Kalimat:</label>
+        <textarea id="edit-catatan" rows="3" placeholder="Tulis catatan rumus gramatikal di sini..." oninput="simpanMetaTopik()"></textarea>
+        
+        <div style="background:#f8fafc; border:1px dashed #cbd5e1; padding:10px; border-radius:6px; margin-top:8px; font-size:0.85rem;">
+            <p style="margin:0 0 4px 0; font-weight:bold; color:#4f46e5;"> Rumus Membuat Furigana (Kanji):</p>
+            <p style="margin:0; color:#4b5563; line-height:1.25rem;">Gunakan tanda kurung siku langsung di belakang kata. <br>Contoh ketik: <b>日本語[にほんご] は 面白い[おもしろい]</b></p>
+        </div>
+    </div>
+
+<script>
+    let db = [];
+    let indeksAktif = 0;
+
+    const dataAwal = [
+        {
+            title: "Belajar Paragraf Pertama",
+            tag: "N4",
+            notes: "• じめじめ (jimejime): Kondisi lembab.\n• ~ね (~ne): Partikel penegas.",
+            rawText: "今日[きょう] は 雨[あめ] が 降[ふ] っていて、部屋が じめじめ するね。"
+        }
+    ];
+
+    // Menggunakan DOMContentLoaded agar browser Android menyelesaikan load elemen HTML dahulu sebelum script berjalan
+    document.addEventListener("DOMContentLoaded", function() {
+        muatDatabase();
+        perbaruiDropdown();
+        isiKolomEditor();
+        renderTeksBacaan();
+    });
+
+    function muatDatabase() {
+        try {
+            const dataLokal = localStorage.getItem('kanji_lab_super_lite');
+            if (dataLokal) {
+                db = JSON.parse(dataLokal);
+                if (!Array.isArray(db) || db.length === 0) db = dataAwal;
+            } else {
+                db = dataAwal;
+                simpanKePenyimpanan();
+            }
+        } catch (e) {
+            db = dataAwal;
+        }
+    }
+
+    function simpanKePenyimpanan() {
+        try {
+            localStorage.setItem('kanji_lab_super_lite', JSON.stringify(db));
+        } catch (e) {}
+    }
+
+    function perbaruiDropdown() {
+        const select = document.getElementById('pilih-topik');
+        if (!select) return;
+        select.innerHTML = '';
+        db.forEach((topik, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.innerText = "[" + (topik.tag || 'Umum') + "] " + (topik.title || 'Tanpa Judul');
+            if (idx === indeksAktif) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    function gantiTopik(idx) {
+        indeksAktif = parseInt(idx);
+        isiKolomEditor();
+        renderTeksBacaan();
+    }
+
+    function buatTopikBaru() {
+        const topikBaru = {
+            title: "Topik Baru " + (db.length + 1),
+            tag: "Umum",
+            notes: "",
+            rawText: "Ketik[きてく] Kalimat[かりまつ] Baru[ばる] Di[で] Sini[しに]"
+        };
+        db.push(topikBaru);
+        indeksAktif = db.length - 1;
+        simpanKePenyimpanan();
+        perbaruiDropdown();
+        isiKolomEditor();
+        renderTeksBacaan();
+    }
+
+    function hapusTopikAktif() {
+        if (db.length <= 1) {
+            alert("Harus menyisakan minimal satu topik pembelajaran.");
+            return;
+        }
+        if (confirm("Hapus topik ini secara permanen?")) {
+            db.splice(indeksAktif, 1);
+            indeksAktif = 0;
+            simpanKePenyimpanan();
+            perbaruiDropdown();
+            isiKolomEditor();
+            renderTeksBacaan();
+        }
+    }
+
+    function isiKolomEditor() {
+        const topik = db[indeksAktif];
+        if (!topik) return;
+        
+        const elJudul = document.getElementById('edit-judul');
+        const elTag = document.getElementById('edit-tag');
+        const elTeks = document.getElementById('edit-teks-mentah');
+        const elCatatan = document.getElementById('edit-catatan');
+
+        if(elJudul) elJudul.value = topik.title || '';
+        if(elTag) elTag.value = topik.tag || '';
+        if(elTeks) elTeks.value = topik.rawText || '';
+        if(elCatatan) elCatatan.value = topik.notes || '';
+    }
+
+    function simpanMetaTopik() {
+        const topik = db[indeksAktif];
+        if (!topik) return;
+        
+        topik.title = document.getElementById('edit-judul').value || '';
+        topik.tag = document.getElementById('edit-tag').value || '';
+        topik.notes = document.getElementById('edit-catatan').value || '';
+        
+        simpanKePenyimpanan();
+        perbaruiDropdown();
+        
+        const elOutCatatan = document.getElementById('output-catatan');
+        if(elOutCatatan) elOutCatatan.innerText = topik.notes || "Belum ada catatan tambahan.";
+    }
+
+    function prosesTeksKeArray() {
+        const topik = db[indeksAktif];
+        if (!topik) return;
+        topik.rawText = document.getElementById('edit-teks-mentah').value || '';
+        simpanKePenyimpanan();
+        renderTeksBacaan();
+    }
+
+    function renderTeksBacaan() {
+        const topik = db[indeksAktif];
+        const output = document.getElementById('output-bacaan');
+        if (!topik || !output) return;
+
+        output.innerHTML = '';
+        
+        const elOutCatatan = document.getElementById('output-catatan');
+
